@@ -1,0 +1,10 @@
+private/
+build/
+
+target/
+*.jar
+*.class
+.idea/
+*.iml
+
+*.zip
