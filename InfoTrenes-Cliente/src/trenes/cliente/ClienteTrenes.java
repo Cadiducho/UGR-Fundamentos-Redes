@@ -2,24 +2,14 @@ package trenes.cliente;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Scanner;
 
-/**
- *
- * @author cadid
- */
 public class ClienteTrenes {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         try {
             new ClienteTrenes().startClient();
@@ -47,34 +37,94 @@ public class ClienteTrenes {
     }
 
     public void startClient() throws IOException {
-        // Enviar peticion
-        String respuesta = send(100, "hola trenes");
-
-        // Mostremos la cadena de caracteres recibidos:
-        System.out.println("Respuesta del servidor: " + respuesta);
-
-        respuesta = send(140, "");
-        System.out.println("r " + respuesta);
+        // Enviar peticion inicial
+        Respuesta respuesta = send(100, "");
         
-        respuesta = send(110, "usuario#hola");
-        System.out.println(respuesta);
-
-        respuesta = send(140, "");
-        System.out.println("Viajes: ");
-        System.out.println(respuesta);
+        if (respuesta.code == 200) { // El servidor responde de manera correcta
+            System.out.println("-------------------------------------");
+            System.out.println("Conexión establecida con el servidor.");
+            System.out.println("-------------------------------------");
+            printMenu();
+            
+            Scanner keyboard = new Scanner(System.in);
+            String accion = keyboard.nextLine();
+            while (!"0".equals(accion)) {
+                switch (accion) {
+                    case "1":
+                        // Intentar iniciar sesión y procesar la respuesta del servidor
+                        System.out.println("Introduce tu nombre de usuario:");
+                        String username = keyboard.nextLine();
+                        System.out.println("Introduce tu contraseña: ");
+                        String passphrase = keyboard.nextLine();
+                        respuesta = send(110, username + "#" + passphrase);
+                        if (respuesta.code == 201) {
+                            System.out.println("Sesión iniciada correctamente.");
+                        } else if (respuesta.code == 301) {
+                            System.out.println("Nombre o contraseña errónea");
+                        }
+                        break;
+                    case "2":
+                        // Pedir lista de estaciones
+                        respuesta = send(130, "");
+                        if (respuesta.code == 230) {
+                            String[] estaciones = respuesta.body.split("#");
+                            for (String estacion : estaciones) {
+                                System.out.println(estacion);
+                            }
+                        } else if (respuesta.code == 310) {
+                            System.out.println(respuesta.body);
+                        }
+                        break;
+                    case "3":
+                        // Pedir lista de viajes
+                        respuesta = send(140, "");
+                        if (respuesta.code == 240) {
+                            String[] viajes = respuesta.body.split("#");
+                            for (String viaje : viajes) {
+                                System.out.println(viaje);
+                            }
+                        } else if (respuesta.code == 310) {
+                            System.out.println(respuesta.body);
+                        }
+                        break;
+                    case "4":
+                        // Preguntar por salidas desde una estación
+                        System.out.println("Introduce la estación de salida:");
+                        String estacionSalidas = keyboard.nextLine();
+                        respuesta = send(150, estacionSalidas);
+                        if (respuesta.code == 250) {
+                            String[] estaciones = respuesta.body.split("#");
+                            for (String estacion : estaciones) {
+                                System.out.println(estacion);
+                            }
+                        } else if (respuesta.code == 350) {
+                            System.out.println(respuesta.body);
+                        } else if (respuesta.code == 310) {
+                            System.out.println(respuesta.body);
+                        }
+                        break;
+                    case "5":
+                        // Preguntar por estación de llegada
+                        System.out.println("Introduce la estación de llegada:");
+                        String estacionLlegadas = keyboard.nextLine();
+                        respuesta = send(160, estacionLlegadas);
+                        if (respuesta.code == 260) {
+                            String[] estaciones = respuesta.body.split("#");
+                            for (String estacion : estaciones) {
+                                System.out.println(estacion);
+                            }
+                        } else if (respuesta.code == 360) {
+                            System.out.println(respuesta.body);
+                        } else if (respuesta.code == 360) {
+                            System.out.println(respuesta.body);
+                        }
+                        break;
+                }
+                printMenu();
+                accion = keyboard.nextLine();
+            }
+        }
         
-        Scanner keyboard = new Scanner(System.in);
-        System.out.println("Introducir estación de inicio: ");
-        String estacion = keyboard.nextLine();
-        respuesta = send(150, estacion);
-        System.out.println(respuesta);
-        
-        System.out.println("Introducir estación de destino: ");
-        estacion = keyboard.nextLine();
-        respuesta = send(160, estacion);
-        System.out.println(respuesta);
-        
-        send(900, "");
         close();
         System.out.println("Cliente finalizado");
     }
@@ -87,21 +137,56 @@ public class ClienteTrenes {
      * @return la respuesta del servidor
      * @throws IOException 
      */
-    private String send(int code, String body) throws IOException {
+    private Respuesta send(int code, String body) throws IOException {
         try {
-            System.out.println("Enviando " + code + body);
             out.println(code + body);
-            return in.readLine();
+            
+            String inputLine = in.readLine();
+            return new Respuesta(inputLine.substring(0, 3), inputLine.substring(3));
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
     }
     
+    /**
+     * Cerrar la conexión
+     * @throws IOException 
+     */
     public void close() throws IOException {
         in.close();
         out.close();
         clientSocket.close();
+    }
+    
+    /**
+     * Escribir menú del cliente
+     */
+    private void printMenu() {
+        System.out.println("");
+        System.out.println("Escoge una acción (un número):");
+        System.out.println("1. Iniciar sesión");
+        System.out.println("2. Ver lista de estaciones");
+        System.out.println("3. Ver lista de viajes");
+        System.out.println("4. Ver salidas desde una estación deseada");
+        System.out.println("5. Ver llegadas a una estación deseada");
+        System.out.println("0. Salir");
+        System.out.println("");
+    }
+    
+
+    /** 
+     * Pequeña clase para procesar facilmente la respuesta del servidor
+     */
+    private class Respuesta {
+
+        Integer code;
+        String body;
+        
+        Respuesta(String code, String body) {
+            this.body = body;
+            this.code = Integer.parseInt(code);
+        }
     }
 
 }

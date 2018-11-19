@@ -19,16 +19,21 @@ import java.util.stream.Collectors;
  * - 130: Listar estaciones
  * - 140: Listar viajes activos
  * - 150: Listar salidas desde estación
- * - 160: Listar llegadas desde estación
+ * - 160: Listar llegadas a estación
+ * 
  * Codigos devueltos:
  * - 200: Aceptar saludo
  * - 201: Inicio de sesión válido
  * - 230: Lista de nombres de estaciones
  * - 240: Lista de viajes activos
- * - 250: Lista de trenes que saldrán a esa estación
+ * - 250: Lista de trenes que saldrán de esa estación
  * - 260: Lista de trenes destino a esa estación
- * - 301: Autentificación errónea
- * - 310: No autentificado
+ * 
+ * - 301: Error. Datos de autentificación inválidos
+ * - 310: Error. No autentificado
+ * - 350: No hay viajes que saldrán de esa estación
+ * - 360: No hay viajes que van destino a esa estación
+ * - 500: Error. Mensaje malformado
  */
 public class ServidorTrenes {
 
@@ -60,6 +65,11 @@ public class ServidorTrenes {
         System.out.println("Esperando peticiones en el puerto " + serverSocket.getLocalPort());
     }
     
+    /**
+     * Iniciar servidor
+     * @param port Puerto de escucha
+     * @throws Exception 
+     */
     public void start(int port) throws Exception {
         do {
             Socket socketServicio = serverSocket.accept();
@@ -68,6 +78,9 @@ public class ServidorTrenes {
         } while(true);
     }
     
+    /**
+     * Cerrar el servidor
+     */
     public void stop() {
          try {
             serverSocket.close();
@@ -76,23 +89,52 @@ public class ServidorTrenes {
         }
     }
     
+    /**
+     * @param socket El socket
+     * @return verdadero si este socket cliente está iniciado sesión
+     */
     public boolean loggedIn(Socket socket) {
         return this.loggedClients.contains(socket);
     }
     
+    /**
+     * Iniciar sesión para un socket
+     * @param socket el socket de ese cliente
+     */
     public void autorizarCliente(Socket socket) {
         loggedClients.add(socket);
     }
     
+    /**
+     * Desautorizar sesión de un socket
+     * @param socket el socket de ese cliente
+     */
     public void desautorizarCliente(Socket socket) {
         loggedClients.remove(socket);
     }
     
-    List<String> estaciones = Arrays.asList("Madrid - Atocha", "Madrid - Chamartín", "Sevilla - Santa Justa", "Málaga - Maria Zambrano",
+    /**
+     * @param estacion Estación de salida
+     * @return Lista de viajes que salen desde la estación
+     */
+    public List<Viaje> findViajesSaliendoDe(String estacion) {
+        return viajes.stream().filter(v -> v.getInicio().equalsIgnoreCase(estacion)).collect(Collectors.toList());
+    }
+    
+    /**
+     * @param estacion Estación de llegada
+     * @return Lista de viajes con llegada a la estación
+     */
+    public List<Viaje> findViajesDestinoA(String estacion) {
+        return viajes.stream().filter(v -> v.getDestino().equalsIgnoreCase(estacion)).collect(Collectors.toList());
+    }
+    
+    
+    List<String> estaciones = Arrays.asList("Madrid - Puerta de Atocha", "Madrid - Chamartín", "Sevilla - Santa Justa", "Málaga - Maria Zambrano",
             "Albacete - Los Llanos", "Segovia - Guiomar", "Valladolid - Campo Grande", "Palencia", "León", "Zamora", "Gijón", "Valencia - Joaquín Sorolla", 
-            "Barcelona - França", "Camp da Tarragona", "Zaragoza - Delicias", "Huesca", "Pamplona", "Vitoria/Gasteiz", "San Sebastián/Donosti", "Bilbao",
-            "Irún", "Pontevedra", "Santiago de Compostela", "A Coruña", "Vigo", "Mérida", "Badajoz", "Murcia", "Alicante", "Toledo", "Ciudad Real", "Puerto Llano",
-            "Guadalajara", "Soria", "Burgos - Rosa de Lima", "Barcelona - Sants", "Granada");
+            "Zaragoza - Delicias", "Huesca", "Pamplona", "Vitoria/Gasteiz", "San Sebastián/Donosti", "Bilbao",
+            "Irún", "Pontevedra", "Santiago de Compostela", "A Coruña", "Vigo - Guixar", "Mérida", "Badajoz", "Murcia", "Alicante", "Toledo", "Ciudad Real", "Puerto Llano",
+            "Guadalajara", "Soria", "Burgos - Rosa de Lima", "Barcelona - Sants", "Barcelona - França", "Girona", "Camp da Tarragona", "Granada");
     /**
      * Generar aleatoriamente viajes
      */
@@ -105,14 +147,5 @@ public class ServidorTrenes {
                     LocalTime.now().minusHours(random.nextInt(6)).minusMinutes(random.nextInt(40)), 
                     LocalTime.now().plusHours(random.nextInt(6)).plusMinutes(random.nextInt(40))));
         }
-    }
-    
-    public List<Viaje> findViajesSaliendoDe(String estacion) {
-        return viajes.stream().filter(v -> v.getInicio().equalsIgnoreCase(estacion)).collect(Collectors.toList());
-    }
-    
-    public List<Viaje> findViajesDestinoA(String estacion) {
-        return viajes.stream().filter(v -> v.getDestino().equalsIgnoreCase(estacion)).collect(Collectors.toList());
-    }
-    
+    }    
 }

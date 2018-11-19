@@ -1,6 +1,7 @@
 package trenes.servidor;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 public class Viaje {
     
@@ -31,10 +32,12 @@ public class Viaje {
     public LocalTime getLlegada() {
         return llegada;
     }
+    
+    private static final DateTimeFormatter formato = DateTimeFormatter.ofPattern("HH:mm");
 
     @Override
     public String toString() {
-        return "Viaje{" + "inicio=" + inicio + ", destino=" + destino + ", salida=" + salida + ", llegada=" + llegada + '}';
+        return "Tren " + inicio + " (" + salida.format(formato) + ") ---> " + destino + " (" + llegada.format(formato) + ")";
     }
     
 }
